@@ -3,19 +3,31 @@
 </template>
 
 <script setup>
-import {onMounted} from "vue";
+import {onMounted, ref} from "vue";
 
-let map
+const mapObj = ref({
+  map: undefined,
+  tileLayer: undefined
+})
+
 function initMap() {
-  map = L.map('map-container', {
-    crs: L.CRS.EPSG3857,
+  mapObj.map = L.map('map-container', {
     zoom: 10,
-    center: [30.621833394767293, 104.06472467339864]
+    minZoom: 4,
+    center: [30.621833394767293, 104.06472467339864],
+    onWrap: true,
+    attributionControl: false,
   }).setView([30.621833394767293, 104.06472467339864], 9)
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  }).addTo(map);
+  mapObj.map.pm.setLang('zh')
+  mapObj.map.pm.addControls({
+    position: 'topright',
+    drawCircle: false,
+  })
+
+  mapObj.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(mapObj.map);
 }
+
 onMounted(() => {
   initMap()
 })
