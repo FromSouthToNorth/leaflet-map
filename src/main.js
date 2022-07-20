@@ -11,9 +11,18 @@ import '@geoman-io/leaflet-geoman-free'
 import 'virtual:svg-icons-register'
 import SvgIcon from './components/SvgIcon/index.vue'
 
+import ElementPlus from 'element-plus'
+import locale from 'element-plus/lib/locale/lang/zh-cn'
+import 'element-plus/dist/index.css'
+
 const app = createApp(App)
 app.component('svg-icon', SvgIcon)
 
 app.use(router)
 app.use(store)
+app.use(ElementPlus, {
+    locale: locale,
+    size: 'small'
+})
+
 app.mount('#app')

@@ -9,10 +9,16 @@
   <div class="map-info">
     <p v-if="mapObj.lng && mapObj.lat">{{ mapObj.lat }}, {{ mapObj.lng }}</p>
   </div>
+  <popup v-model:visible="popup.visible" />
 </template>
 
 <script setup>
 import {onMounted, reactive} from 'vue'
+import Popup from '../../components/Popup/index.vue'
+
+const popup = reactive({
+  visible: false
+})
 
 const mapObj = reactive({
   map: undefined,
@@ -45,8 +51,10 @@ function initMap() {
   mapObj.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(mapObj.map);
 
   mapObj.map.on('pm:create', (e) => {
+    console.log("pm:create", e);
     // 绘制后禁用绘制
     mapObj.map.pm.disableDraw()
+    popup.visible = true
   });
 }
 
