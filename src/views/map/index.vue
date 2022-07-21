@@ -3,7 +3,7 @@
   </div>
   <div @click="clearDraw" class="button-clear-draw" title="清除所以绘制">
     <a class="btn-clear-draw" href="#">
-      <svg-icon icon-class="delete" color="#434343" />
+      <svg-icon icon-class="delete" color="#434343"/>
     </a>
   </div>
   <div class="map-info">
@@ -11,8 +11,8 @@
   </div>
   <div v-if="popup.visible" class="map-popup">
     <el-form ref="mapInfoRef" :model="form" label-width="60px" :rules="rules">
-      <el-form-item label="地名" prop="placeName">
-        <el-input v-model="form.placeName" />
+      <el-form-item label="名称" prop="name">
+        <el-input v-model="form.name" />
       </el-form-item>
       <el-form-item label="颜色" prop="color">
         <el-color-picker v-model="form.color" />
@@ -41,7 +41,7 @@
           <icon-select ref="iconSelectRef" @selected="selected" />
         </el-popover>
       </el-form-item>
-      <el-form-item label="金纬度" prop="latlng">
+      <el-form-item label="金纬度" prop="latlng" v-if="mapObj.drawLayer.shape === 'Marker'">
         <el-input-number
           :precision="15"
           style="margin-right: 6px; width: 260px"
@@ -74,23 +74,15 @@
 <script setup>
 import {getCurrentInstance, onMounted, reactive, ref, toRefs} from 'vue'
 import IconSelect from '../../components/IconSelect/index.vue'
-import { ClickOutside as vClickOutside } from 'element-plus'
+import {ClickOutside as vClickOutside} from 'element-plus'
 
-const { proxy } = getCurrentInstance()
+const {proxy} = getCurrentInstance()
 
 const iconSelectRef = ref(null)
 const showChooseIcon = ref(false)
 
 const popup = reactive({
   visible: false
-})
-
-const mapObj = reactive({
-  map: undefined,
-  lat: undefined,
-  lng: undefined,
-  tileLayer: undefined,
-  drawLayer: undefined,
 })
 
 // const form = reactive({
@@ -103,11 +95,18 @@ const mapObj = reactive({
 const data = reactive({
   form: {},
   rules: {
-    placeName: [{ required: true, message: "地名不能为空", trigger: "blur" }],
+    name: [{required: true, message: "名称不能为空", trigger: "blur"}]
   },
-});
+})
 
-const { form, rules } = toRefs(data);
+const { form, rules } = toRefs(data)
+const mapObj = reactive({
+  map: undefined,
+  lat: undefined,
+  lng: undefined,
+  tileLayer: undefined,
+  drawLayer: undefined,
+})
 
 function initMap() {
   mapObj.map = L.map('map-container', {
@@ -128,19 +127,31 @@ function initMap() {
     position: 'topleft',
   })
 
-  mapObj.map.addControl(L.control.scale({ imperial: false }))
+  mapObj.map.addControl(L.control.scale({imperial: false}))
 
   mapObj.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(mapObj.map);
 
   mapObj.map.on('pm:create', (e) => {
     onCancel()
-    mapObj.drawLayer = e
-    console.log(mapObj.drawLayer.layer._latlng);
-    form.value.latlng = [mapObj.drawLayer.layer._latlng.lat, mapObj.drawLayer.layer._latlng.lng]
+    setDrawData(e)
     // 绘制后禁用绘制
     mapObj.map.pm.disableDraw()
     popup.visible = true
   });
+}
+
+function setDrawData(e) {
+  mapObj.drawLayer = e
+  let { shape, layer } = e
+  console.log("shape --> ", shape)
+  form.value.shape = shape
+  if (shape === 'Marker') {
+    form.value.latlng = [layer._latlng.lat, layer._latlng.lng]
+  }
+  else {
+    form.value.latlng = layer._latlngs
+  }
+  console.log("form.value --> ", form.value);
 }
 
 /** 清除所有绘制 */
@@ -171,10 +182,11 @@ const onCancel = () => {
 /** 表单重置 */
 function reset() {
   form.value = {
-    placeName: undefined,
+    name: undefined,
     color: undefined,
     icon: undefined,
     latlng: [],
+    shape: undefined,
   }
   proxy.resetForm('mapInfoRef')
 }
@@ -184,11 +196,13 @@ function showSelectIcon() {
   iconSelectRef.value.reset();
   showChooseIcon.value = true;
 }
+
 /** 选择图标 */
 function selected(name) {
   form.value.icon = name;
   showChooseIcon.value = false;
 }
+
 /** 图标外层点击隐藏下拉列表 */
 function hideSelectIcon() {
   showChooseIcon.value = false;
@@ -233,7 +247,7 @@ onMounted(() => {
   top: 464px;
   margin: 10px 0 0 10px;
   border-radius: 2px;
-  border: 2px solid rgba(0,0,0, 0.2);
+  border: 2px solid rgba(0, 0, 0, 0.2);
   text-align: center;
   line-height: 30px;
   background: #fff;
@@ -246,7 +260,7 @@ onMounted(() => {
 }
 
 .map-popup {
-  width: 660px;
+  width: 500px;
   z-index: 999;
   position: absolute;
   top: 80px;
