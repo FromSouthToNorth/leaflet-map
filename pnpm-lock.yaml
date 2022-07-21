@@ -1,6 +1,7 @@
 lockfileVersion: 5.3
 
 specifiers:
+  '@element-plus/icons-vue': ^2.0.6
   '@geoman-io/leaflet-geoman-free': ^2.13.0
   '@vitejs/plugin-vue': ^3.0.0
   '@vue/compiler-sfc': ^3.2.37
@@ -17,6 +18,7 @@ specifiers:
   vue-router: ^4.1.2
 
 dependencies:
+  '@element-plus/icons-vue': registry.npmmirror.com/@element-plus/icons-vue/2.0.6_vue@3.2.37
   '@geoman-io/leaflet-geoman-free': registry.npmmirror.com/@geoman-io/leaflet-geoman-free/2.13.0_leaflet@1.8.0
   element-plus: registry.npmmirror.com/element-plus/2.2.9_vue@3.2.37
   leaflet: registry.npmmirror.com/leaflet/1.8.0
