@@ -44,7 +44,7 @@
       <el-form-item label="金纬度" prop="latlng" v-if="mapObj.drawLayer.shape === 'Marker'">
         <el-input-number
           :precision="15"
-          style="margin-right: 6px; width: 260px"
+          style="margin-right: 6px; width: 200px"
           v-model="form.latlng[0]"
           :min="10"
           :max="600"
@@ -54,7 +54,7 @@
         />
         <el-input-number
           :precision="15"
-          style="width: 260px"
+          style="width: 200px"
           v-model="form.latlng[1]"
           :min="10"
           :max="600"
