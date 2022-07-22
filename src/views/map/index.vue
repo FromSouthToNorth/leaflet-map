@@ -129,7 +129,29 @@ function initMap() {
 
   mapObj.map.addControl(L.control.scale({imperial: false}))
 
-  mapObj.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(mapObj.map);
+  // mapObj.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(mapObj.map);
+
+  var vecLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=vec_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
+  //天地图矢量注记图层
+  var cvaLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=cva_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
+  //天地图影像图层
+  var imgLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=img_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
+  //天地图影像注记图层
+  var ciaLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=cia_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
+  //矢量图层组
+  var vecLayerGroup = L.layerGroup([vecLayer, cvaLayer]);
+  //影像图层组
+  var imgLayerGroup = L.layerGroup([imgLayer, ciaLayer]);
+  //设置图层组
+  var baseLayers = {
+    "天地图矢量": vecLayerGroup,
+    "天地图影像": imgLayerGroup
+  };
+  //初始时加载矢量图层组
+  mapObj.map.addLayer(vecLayerGroup);
+  //添加图层组控件
+  L.control.layers(baseLayers).addTo(mapObj.map);
+
 
   mapObj.map.on('pm:create', (e) => {
     onCancel()
