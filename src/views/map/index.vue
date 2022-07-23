@@ -85,13 +85,6 @@ const popup = reactive({
   visible: false
 })
 
-// const form = reactive({
-//   placeName: undefined,
-//   color: undefined,
-//   icon: undefined,
-//   latlng: [],
-// })
-
 const data = reactive({
   form: {},
   rules: {
@@ -111,11 +104,36 @@ const mapObj = reactive({
 function initMap() {
   mapObj.map = L.map('map-container', {
     zoom: 10,
-    minZoom: 4,
+    minZoom: 5,
     center: [30.621833394767293, 104.06472467339864],
     onWrap: true,
     attributionControl: false,
   }).setView([30.621833394767293, 104.06472467339864], 9)
+
+  const normalm = L.tileLayer.chinaProvider('GaoDe.Normal.Map', {
+    maxZoom: 18,
+    minZoom: 5,
+  })
+  const imgm = L.tileLayer.chinaProvider('GaoDe.Satellite.Map', {
+    maxZoom: 18,
+    minZoom: 5
+  });
+  const imga = L.tileLayer.chinaProvider('GaoDe.Satellite.Annotion', {
+    maxZoom: 18 ,
+    minZoom: 5
+  });
+
+  const normal = L.layerGroup([normalm]),
+      image = L.layerGroup([imgm, imga]);
+
+  const baseLayers = {
+    "地图": normal,
+    "影像": image,
+  }
+
+  L.control.layers(baseLayers, null).addTo(mapObj.map)
+
+  normalm.addTo(mapObj.map)
 
   mapObj.map.on('click', (e) => {
     mapObj.lat = e.latlng.lat
@@ -129,37 +147,13 @@ function initMap() {
 
   mapObj.map.addControl(L.control.scale({imperial: false}))
 
-  // mapObj.tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {}).addTo(mapObj.map);
-
-  var vecLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=vec_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
-  //天地图矢量注记图层
-  var cvaLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=cva_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
-  //天地图影像图层
-  var imgLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=img_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
-  //天地图影像注记图层
-  var ciaLayer = L.tileLayer("https://t0.tianditu.gov.cn/DataServer?T=cia_w&x={x}&y={y}&l={z}&tk=21cb7300e83d3e5640326c7ccf25226e", { noWrap: true });
-  //矢量图层组
-  var vecLayerGroup = L.layerGroup([vecLayer, cvaLayer]);
-  //影像图层组
-  var imgLayerGroup = L.layerGroup([imgLayer, ciaLayer]);
-  //设置图层组
-  var baseLayers = {
-    "天地图矢量": vecLayerGroup,
-    "天地图影像": imgLayerGroup
-  };
-  //初始时加载矢量图层组
-  mapObj.map.addLayer(vecLayerGroup);
-  //添加图层组控件
-  L.control.layers(baseLayers).addTo(mapObj.map);
-
-
   mapObj.map.on('pm:create', (e) => {
     onCancel()
     setDrawData(e)
     // 绘制后禁用绘制
     mapObj.map.pm.disableDraw()
     popup.visible = true
-  });
+  })
 }
 
 function setDrawData(e) {

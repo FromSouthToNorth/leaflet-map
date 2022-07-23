@@ -13,6 +13,7 @@
     "@geoman-io/leaflet-geoman-free": "^2.13.0",
     "element-plus": "^2.2.9",
     "leaflet": "^1.8.0",
+    "leaflet.chinesetmsproviders": "^1.0.22",
     "pinia": "^2.0.16",
     "sass": "^1.53.0",
     "vue": "^3.2.37",
