@@ -116,55 +116,49 @@ const mapObj = reactive({
 
 function initMap() {
 
-  const normalm = L.tileLayer.chinaProvider('GaoDe.Normal.Map', {
-    maxZoom: 18,
-    minZoom: 5,
-  })
-  const imgm = L.tileLayer.chinaProvider('GaoDe.Satellite.Map', {
-    maxZoom: 18,
-    minZoom: 5
-  });
-  const imga = L.tileLayer.chinaProvider('GaoDe.Satellite.Annotion', {
-    maxZoom: 18,
-    minZoom: 5
-  });
+  const layer1_1 = L.tileLayer('https://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
+  const layer1_2 = L.tileLayer('https://t0.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
+  const layerGroup1 = L.layerGroup([layer1_1, layer1_2])
 
-  // const normal = L.layerGroup([normalm]),
-  //     image = L.layerGroup([imgm, imga]);
+  const layer2_1 = L.tileLayer('https://t0.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
+  const layer2_2 = L.tileLayer('https://t0.tianditu.gov.cn/cia_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cia&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
+  const layerGroup2 = L.layerGroup([layer2_1, layer2_2])
 
-  // const baseLayers = {
-  //   "地图": normal,
-  //   "影像": image,
-  // }
+  const baseLayers = {
+    '地图': layerGroup1,
+    '影像': layerGroup2
+  }
 
-  mapObj.map = L.map('map-container', {
-    zoom: 10,
-    minZoom: 5,
+  // mapObj.
+    const map = L.map('map-container', {
     center: [30.621833394767293, 104.06472467339864],
-    attributionControl: false,
+    zoom: 10,
+    layers: [layerGroup2, layerGroup1],
   })
 
-  L.layerGroup([imgm, imga]).addTo(mapObj.map)
+  const layerControl = L.control.layers(baseLayers).addTo(map)
 
-  mapObj.map.on('click', (e) => {
+  map.on('click', (e) => {
     mapObj.lat = e.latlng.lat
     mapObj.lng = e.latlng.lng
   })
 
-  mapObj.map.pm.setLang('zh')
-  mapObj.map.pm.addControls({
+  map.pm.setLang('zh')
+  map.pm.addControls({
     position: 'topleft',
   })
 
-  mapObj.map.addControl(L.control.scale({imperial: false}))
+  map.addControl(L.control.scale({imperial: false}))
 
-  mapObj.map.on('pm:create', (e) => {
+  map.on('pm:create', (e) => {
     onCancel()
     setDrawData(e)
     // 绘制后禁用绘制
-    mapObj.map.pm.disableDraw()
+    map.pm.disableDraw()
     popup.visible = true
   })
+
+  mapObj.map = map
 }
 
 function setDrawData(e) {
