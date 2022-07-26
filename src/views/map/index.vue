@@ -129,26 +129,22 @@ function initMap() {
     minZoom: 5
   });
 
-  const normal = L.layerGroup([normalm]),
-      image = L.layerGroup([imgm, imga]);
+  // const normal = L.layerGroup([normalm]),
+  //     image = L.layerGroup([imgm, imga]);
 
-  const baseLayers = {
-    "地图": normal,
-    "影像": image,
-  }
+  // const baseLayers = {
+  //   "地图": normal,
+  //   "影像": image,
+  // }
 
   mapObj.map = L.map('map-container', {
     zoom: 10,
     minZoom: 5,
-    layers: [normal],
     center: [30.621833394767293, 104.06472467339864],
-    onWrap: true,
     attributionControl: false,
-  }).setView([30.621833394767293, 104.06472467339864], 9)
+  })
 
-  L.control.layers(baseLayers, null).addTo(mapObj.map)
-
-  normalm.addTo(mapObj.map)
+  L.layerGroup([imgm, imga]).addTo(mapObj.map)
 
   mapObj.map.on('click', (e) => {
     mapObj.lat = e.latlng.lat
