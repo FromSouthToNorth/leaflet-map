@@ -75,6 +75,16 @@
 import {getCurrentInstance, onMounted, reactive, ref, toRefs} from 'vue'
 import IconSelect from '../../components/IconSelect/index.vue'
 import {ClickOutside as vClickOutside} from 'element-plus'
+import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
+import iconUrl from 'leaflet/dist/images/marker-icon.png'
+import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
+
+delete L.Icon.Default.prototype._getIconUrl
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: iconRetinaUrl,
+  iconUrl: iconUrl,
+  shadowUrl: shadowUrl,
+})
 
 const {proxy} = getCurrentInstance()
 
@@ -102,13 +112,6 @@ const mapObj = reactive({
 })
 
 function initMap() {
-  mapObj.map = L.map('map-container', {
-    zoom: 10,
-    minZoom: 5,
-    center: [30.621833394767293, 104.06472467339864],
-    onWrap: true,
-    attributionControl: false,
-  }).setView([30.621833394767293, 104.06472467339864], 9)
 
   const normalm = L.tileLayer.chinaProvider('GaoDe.Normal.Map', {
     maxZoom: 18,
@@ -130,6 +133,15 @@ function initMap() {
     "地图": normal,
     "影像": image,
   }
+
+  mapObj.map = L.map('map-container', {
+    zoom: 10,
+    minZoom: 5,
+    layers: [normal],
+    center: [30.621833394767293, 104.06472467339864],
+    onWrap: true,
+    attributionControl: false,
+  }).setView([30.621833394767293, 104.06472467339864], 9)
 
   L.control.layers(baseLayers, null).addTo(mapObj.map)
 
