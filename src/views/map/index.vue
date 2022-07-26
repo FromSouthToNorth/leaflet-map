@@ -12,21 +12,22 @@
   <div v-if="popup.visible" class="map-popup">
     <el-form ref="mapInfoRef" :model="form" label-width="60px" :rules="rules">
       <el-form-item label="名称" prop="name">
-        <el-input v-model="form.name" />
+        <el-input v-model="form.name"/>
       </el-form-item>
       <el-form-item label="颜色" prop="color">
-        <el-color-picker v-model="form.color" />
+        <el-color-picker v-model="form.color"/>
       </el-form-item>
       <el-form-item label="菜单图标" prop="icon" v-if="mapObj.drawLayer.shape === 'Marker'">
         <el-popover
-          placement="bottom-start"
-          :width="540"
-          v-model:visible="showChooseIcon"
-          trigger="click"
-          @show="showSelectIcon"
+            placement="bottom-start"
+            :width="540"
+            v-model:visible="showChooseIcon"
+            trigger="click"
+            @show="showSelectIcon"
         >
           <template #reference>
-            <el-input v-model="form.icon" laceholder="点击选择图标" @click="showSelectIcon" v-click-outside="hideSelectIcon" readonl>
+            <el-input v-model="form.icon" laceholder="点击选择图标" @click="showSelectIcon" v-click-outside="hideSelectIcon"
+                      readonl>
               <template #prefix>
                 <svg-icon
                     v-if="form.icon"
@@ -34,34 +35,36 @@
                     class="el-input__icon"
                     style="height: 32px;width: 16px;"
                 />
-                <el-icon v-else style="height: 32px;width: 16px;"><search /></el-icon>
+                <el-icon v-else style="height: 32px;width: 16px;">
+                  <search/>
+                </el-icon>
               </template>
             </el-input>
           </template>
-          <icon-select ref="iconSelectRef" @selected="selected" />
+          <icon-select ref="iconSelectRef" @selected="selected"/>
         </el-popover>
       </el-form-item>
       <el-form-item label="金纬度" prop="latlng" v-if="mapObj.drawLayer.shape === 'Marker'">
         <el-input-number
-          :precision="15"
-          style="margin-right: 6px; width: 200px"
-          v-model="form.latlng[0]"
-          :min="10"
-          :max="600"
-          size="small"
-          controls-position="right"
-          @change="handleChange"
+            :precision="15"
+            style="margin-right: 6px; width: 200px"
+            v-model="form.latlng[0]"
+            :min="10"
+            :max="600"
+            size="small"
+            controls-position="right"
+            @change="handleChange"
         />
         <el-input-number
-          :precision="15"
-          style="width: 200px"
-          v-model="form.latlng[1]"
-          :min="10"
-          :max="600"
-          size="small"
-          controls-position="right"
-          @change="handleChange"
-      />
+            :precision="15"
+            style="width: 200px"
+            v-model="form.latlng[1]"
+            :min="10"
+            :max="600"
+            size="small"
+            controls-position="right"
+            @change="handleChange"
+        />
       </el-form-item>
       <el-form-item>
         <el-button type="primary" @click="onSubmit">提交</el-button>
@@ -73,7 +76,7 @@
 
 <script setup>
 import {getCurrentInstance, onMounted, reactive, ref, toRefs} from 'vue'
-import IconSelect from '../../components/IconSelect/index.vue'
+import IconSelect from '@/components/IconSelect/index.vue'
 import {ClickOutside as vClickOutside} from 'element-plus'
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import iconUrl from 'leaflet/dist/images/marker-icon.png'
@@ -102,7 +105,7 @@ const data = reactive({
   },
 })
 
-const { form, rules } = toRefs(data)
+const {form, rules} = toRefs(data)
 const mapObj = reactive({
   map: undefined,
   lat: undefined,
@@ -122,7 +125,7 @@ function initMap() {
     minZoom: 5
   });
   const imga = L.tileLayer.chinaProvider('GaoDe.Satellite.Annotion', {
-    maxZoom: 18 ,
+    maxZoom: 18,
     minZoom: 5
   });
 
@@ -170,13 +173,12 @@ function initMap() {
 
 function setDrawData(e) {
   mapObj.drawLayer = e
-  let { shape, layer } = e
+  let {shape, layer} = e
   console.log("shape --> ", shape)
   form.value.shape = shape
   if (shape === 'Marker') {
     form.value.latlng = [layer._latlng.lat, layer._latlng.lng]
-  }
-  else {
+  } else {
     form.value.latlng = layer._latlngs
   }
   console.log("form.value --> ", form.value);

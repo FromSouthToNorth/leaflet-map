@@ -17,7 +17,7 @@ import ElementPlus from 'element-plus'
 import locale from 'element-plus/lib/locale/lang/zh-cn'
 import 'element-plus/dist/index.css'
 
-import { resetForm } from './utils/util.js'
+import { resetForm } from '@/utils/util.js'
 
 const app = createApp(App)
 

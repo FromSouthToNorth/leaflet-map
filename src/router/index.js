@@ -1,5 +1,5 @@
 import {createWebHistory, createRouter} from 'vue-router'
-import Home from '../views/map/index.vue'
+import Home from '@/views/map/index.vue'
 
 export const constantRoutes = [
     {
@@ -15,8 +15,9 @@ const router = createRouter({
     scrollBehavior(to, from, savedPosition) {
         if (savedPosition) {
             return savedPosition
-        } else {
-            return { top: 0 }
+        }
+        else {
+            return {top: 0}
         }
     },
 });
