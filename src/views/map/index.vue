@@ -101,7 +101,8 @@ const popup = reactive({
 const data = reactive({
   form: {},
   rules: {
-    name: [{required: true, message: "名称不能为空", trigger: "blur"}]
+    name: [{required: true, message: "名称不能为空", trigger: "blur"}],
+    icon: [{required: true, message: "图标不能为空", trigger: "blur"}],
   },
 })
 
@@ -116,24 +117,35 @@ const mapObj = reactive({
 
 function initMap() {
 
-  const layer1_1 = L.tileLayer('https://t0.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
-  const layer1_2 = L.tileLayer('https://t0.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
-  const layerGroup1 = L.layerGroup([layer1_1, layer1_2])
+  const layer = L.tileLayer('https://t{s}.tianditu.gov.cn/ibo_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ibo&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
 
-  const layer2_1 = L.tileLayer('https://t0.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
-  const layer2_2 = L.tileLayer('https://t0.tianditu.gov.cn/cia_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cia&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {})
-  const layerGroup2 = L.layerGroup([layer2_1, layer2_2])
+  const layer1_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layer1_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layerGroup1 = L.layerGroup([layer1_1, layer1_2, layer])
+
+  const layer2_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layer2_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cia_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cia&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layerGroup2 = L.layerGroup([layer2_1, layer2_2, layer])
+
+
+  const layer3_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/ter_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ter&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layer3_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cta_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cta&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layerGroup3 = L.layerGroup([layer3_1, layer3_2, layer])
 
   const baseLayers = {
-    '地图': layerGroup1,
-    '影像': layerGroup2
+    '矢量': layerGroup1,
+    '影像': layerGroup2,
+    '地形': layerGroup3,
   }
 
   // mapObj.
-    const map = L.map('map-container', {
+  const map = L.map('map-container', {
     center: [30.621833394767293, 104.06472467339864],
     zoom: 10,
-    layers: [layerGroup2, layerGroup1],
+    maxZoom: 16,
+    minZoom: 5,
+    attributionControl: false,
+    layers: [layerGroup1],
   })
 
   const layerControl = L.control.layers(baseLayers).addTo(map)
@@ -184,9 +196,22 @@ function clearDraw() {
 const onSubmit = () => {
   proxy.$refs['mapInfoRef'].validate(valid => {
     if (valid) {
-      console.log(form.value);
+      if (form.value.shape === 'Marker') {
+       const mIcon = L.icon({
+         iconSize: [24, 24],
+         iconUrl: getIconUrl(form.value.icon)
+       })
+        L.marker(form.value.latlng, {
+          icon: mIcon
+        }).addTo(mapObj.map).bindPopup(form.value.name)
+      }
+      onCancel()
     }
   })
+}
+
+function getIconUrl(icon) {
+  return new URL(`../../assets/icons/svg/${icon}.svg`, import.meta.url).href
 }
 
 const onCancel = () => {
@@ -195,12 +220,12 @@ const onCancel = () => {
     mapObj.map.removeLayer(mapObj.drawLayer.layer)
     mapObj.drawLayer = undefined
   }
-  popup.visible = false
   reset()
 }
 
 /** 表单重置 */
 function reset() {
+  popup.visible = false
   form.value = {
     name: undefined,
     color: undefined,
