@@ -1,11 +1,11 @@
-import { defineStore } from 'pinia'
+import {defineStore} from 'pinia'
 
 const userSettingsStore = defineStore(
-    'setting',
-    {
-        state: () => ({}),
-        actions: {}
-    }
+  'setting',
+  {
+    state: () => ({}),
+    actions: {}
+  }
 )
 
 export default userSettingsStore
