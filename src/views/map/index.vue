@@ -1,6 +1,15 @@
 <template>
   <div class="map-container">
     <div id="map-main" />
+    <div class="map-controls-wrap">
+      <div class="map-controls">
+        <div class="map-control zoombuttons">
+          <button class="zoom-in"></button>
+          <button class="zoom-out">
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
