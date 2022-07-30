@@ -4,17 +4,36 @@
     <div class="map-controls-wrap">
       <div class="map-controls">
         <div class="map-control zoombuttons">
-          <button class="zoom-in"></button>
-          <button class="zoom-out">
+          <button class="zoom-in" :class="zoomInDisabled ? 'disabled' : ''" @click="zoomIn" :disabled="zoomInDisabled">
+            <svg-icon :iconClass="'zoom-in'" />
+          </button>
+          <button class="zoom-out" :class="zoomOutDisabled ? 'disabled' : ''" @click="zoomOut" :disabled="zoomOutDisabled">
+            <svg-icon :iconClass="'zoom-out'" />
+          </button>
+        </div>
+        <div class="map-control layers">
+          <button @click="layersDrawer">
+            <svg-icon :iconClass="'layers'" />
+          </button>
+        </div>
+        <div class="map-control geolocate-control">
+          <button :style="isLocation ? { background: 'rgba(47,84,235, 0.6)' } : {}" @click="getLocation">
+            <svg-icon :iconClass="'location'" />
           </button>
         </div>
       </div>
     </div>
+    <el-drawer custom-class="layer-select-drawer" :title="'图层选择'" v-model="drawer" :modal="false" :z-index="998">
+      <h2 class="layer-select-title">地图</h2>
+      <el-radio-group class="layer-group" v-model="baseLayer" @change="layerChange">
+        <el-radio :key="key" v-for="key in layerKeys" :label="key">{{ key }}</el-radio>
+      </el-radio-group>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import {getCurrentInstance, onMounted, reactive, ref} from 'vue'
+import {getCurrentInstance, onMounted, reactive, toRefs, ref} from 'vue'
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import iconUrl from 'leaflet/dist/images/marker-icon.png'
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
@@ -27,16 +46,24 @@ L.Icon.Default.mergeOptions({
 })
 
 const {proxy} = getCurrentInstance()
-
-const iconSelectRef = ref(null)
-
-const mapObj = reactive({
-  map: undefined,
-  lat: undefined,
-  lng: undefined,
-  tileLayer: undefined,
-  drawLayer: undefined,
-})
+const iconSelectRef = ref({})
+const map = reactive({})
+const rMap = toRefs(map)
+const lat = ref(0)
+const lng = ref(0)
+const zoomInDisabled = ref(false)
+const zoomOutDisabled = ref(false)
+const locationMarker = reactive({})
+const rLocationMarker = toRefs(locationMarker)
+const locationCircle = reactive({})
+const rLocationCircle = toRefs(locationCircle)
+const isLocation = ref(false)
+const tileLayers = reactive({})
+const baseLayers = toRefs(tileLayers)
+const layerKeys = reactive([])
+const drawer = ref(false)
+const baseLayer = ref('')
+const previousLayer = ref('')
 
 function initMap() {
 
@@ -55,13 +82,17 @@ function initMap() {
   const layer3_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cta_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cta&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
   const layerGroup3 = L.layerGroup([layer3_1, layer3_2, layer])
 
-  const baseLayers = {
+  baseLayers.value = {
     '矢量': layerGroup1,
     '影像': layerGroup2,
     '地形': layerGroup3,
   }
+  baseLayer.value = '矢量'
+  previousLayer.value = '矢量'
+  for (const key in baseLayers.value) {
+    layerKeys.push(key)
+  }
 
-  // mapObj.
   const map = L.map('map-main', {
     center: [30.621833394767293, 104.06472467339864],
     zoom: 10,
@@ -72,63 +103,89 @@ function initMap() {
     layers: [layerGroup1],
   })
 
-  const layerControl = L.control.layers(baseLayers).addTo(map)
-
   map.on('click', (e) => {
-    mapObj.lat = e.latlng.lat
-    mapObj.lng = e.latlng.lng
+    lat.value = e.latlng.lat
+    lng.value = e.latlng.lng
   })
 
   map.addControl(L.control.scale({imperial: false}))
-
-  map.locate({
-    setVies: true
-  })
-  map.on('locationfound', e => {
-    console.log("locationfound", e.latlng);
-    L.marker(e.latlng).addTo(map).bindPopup("你就在这个圈内")
-  })
 
   map.on('locationerror', e => {
     console.log("locationerror --> ", e);
   })
 
-  // map.pm.setLang('zh')
-  // map.pm.addControls({
-  //   position: 'topleft',
-  // })
-
-
-  // map.on('pm:create', (e) => {
-  //   setDrawData(e)
-  //   // 绘制后禁用绘制
-  //   map.pm.disableDraw()
-  // })
-
-  mapObj.map = map
-}
-
-function setDrawData(e) {
-  mapObj.drawLayer = e
-}
-
-/** 清除所有绘制 */
-function clearDraw() {
-  mapObj.map.pm.getGeomanDrawLayers().forEach(e => {
-    if (mapObj.map.hasLayer(e)) mapObj.map.removeLayer(e);
+  map.on('zoom', e => {
+    eventMapZoom()
   })
+
+  rMap.value = map
+
+  getLocation()
+}
+
+function getLocation() {
+  isLocation.value = !isLocation.value
+  rMap.value.locate({
+    setVies: true,
+  })
+
+  rMap.value.on('locationfound', e => {
+    if (rLocationMarker.value &&  rMap.value.hasLayer(rLocationMarker.value)) {
+      rMap.value.removeLayer(rLocationMarker.value)
+    }
+    if (rLocationCircle.value &&  rMap.value.hasLayer(rLocationCircle.value)) {
+      rMap.value.removeLayer(rLocationCircle.value)
+    }
+    if (isLocation.value) {
+      const { latlng } = e
+      rMap.value.setView(latlng, 12)
+      rLocationMarker.value = L.marker(latlng, {
+        icon: L.divIcon({ className: 'location-marker'})
+      }).addTo( rMap.value)
+      rLocationCircle.value = L.circle(latlng, {
+        color: 'transparent',
+        fillColor: 'rgb(15, 128, 225)',
+        fillOpacity: 0.2,
+        radius: 6600
+      }).addTo( rMap.value)
+    }
+  })
+}
+
+function eventMapZoom() {
+  const zoom = rMap.value.getZoom()
+  zoomInDisabled.value = zoom >= rMap.value.getMaxZoom()
+  zoomOutDisabled.value = zoom <= rMap.value.getMinZoom()
+}
+
+function zoomIn() {
+  rMap.value.zoomIn()
+}
+
+function zoomOut() {
+  rMap.value.zoomOut()
+}
+
+function layersDrawer() {
+  drawer.value = !drawer.value
+}
+
+function layerChange() {
+  for (const key in baseLayers.value) {
+    if (key === previousLayer.value) {
+      rMap.value.removeLayer(baseLayers.value[key])
+    }
+  }
+  previousLayer.value = baseLayer.value
+  for (const key in baseLayers.value) {
+    if (key === baseLayer.value) {
+      rMap.value.addLayer(baseLayers.value[key])
+    }
+  }
 }
 
 function getIconUrl(icon) {
   return new URL(`../../assets/icons/svg/${icon}.svg`, import.meta.url).href
-}
-
-const onCancel = () => {
-  if (mapObj.drawLayer
-      && mapObj.map.hasLayer(mapObj.drawLayer.layer)) {
-    mapObj.map.removeLayer(mapObj.drawLayer.layer)
-    mapObj.drawLayer = undefined
-  }
 }
 
 onMounted(() => {
