@@ -1,42 +1,58 @@
 <template>
   <div class="map-container">
-    <div id="map-main" />
-    <div class="map-controls-wrap">
-      <div class="map-controls">
-        <div class="map-control zoombuttons">
-          <button class="zoom-in" :class="zoomInDisabled ? 'disabled' : ''" @click="zoomIn" :disabled="zoomInDisabled">
-            <svg-icon :iconClass="'zoom-in'" />
-          </button>
-          <button class="zoom-out" :class="zoomOutDisabled ? 'disabled' : ''" @click="zoomOut" :disabled="zoomOutDisabled">
-            <svg-icon :iconClass="'zoom-out'" />
-          </button>
-        </div>
-        <div class="map-control layers">
-          <button @click="layersDrawer">
-            <svg-icon :iconClass="'layers'" />
-          </button>
-        </div>
-        <div class="map-control geolocate-control">
-          <button :style="isLocation ? { background: 'rgba(47,84,235, 0.6)' } : {}" @click="getLocation">
-            <svg-icon :iconClass="'location'" />
-          </button>
+    <div id="map-main">
+      <div class="map-controls-wrap">
+        <div class="map-controls">
+          <div class="map-control zoombuttons">
+            <button class="zoom-in" :class="zoomInDisabled ? 'disabled' : ''" @click="zoomIn" :disabled="zoomInDisabled">
+              <svg-icon :iconClass="'zoom-in'" />
+            </button>
+            <button class="zoom-out" :class="zoomOutDisabled ? 'disabled' : ''" @click="zoomOut" :disabled="zoomOutDisabled">
+              <svg-icon :iconClass="'zoom-out'" />
+            </button>
+          </div>
+          <div class="map-control layers">
+            <button @click="layersDrawer">
+              <svg-icon :iconClass="'layers'" />
+            </button>
+          </div>
+          <div class="map-control geolocate-control">
+            <button :style="isLocation ? { background: 'rgba(47,84,235, 0.6)' } : {}" @click="getLocation">
+              <svg-icon :iconClass="'location'" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
-    <el-drawer custom-class="layer-select-drawer" :title="'图层选择'" v-model="drawer" :modal="false" :z-index="998">
-      <h2 class="layer-select-title">地图</h2>
-      <el-radio-group class="layer-group" v-model="baseLayer" @change="layerChange">
-        <el-radio :key="key" v-for="key in layerKeys" :label="key">{{ key }}</el-radio>
-      </el-radio-group>
-    </el-drawer>
+    <div class="layer-select-drawer" v-show="drawer" :class="drawer ? 'open' : ''">
+      <div class="layer-heading">
+        <h2>地图图层</h2>
+        <el-icon @click="drawer=!drawer"><CloseBold /></el-icon>
+      </div>
+      <div class="layer-select">
+        <div class="layer-map-select-list">
+          <h3 @click="layerMapSelectListOpen">
+            <a href="#" role="button" title="展开">
+              <el-icon v-if="layerMapSelectListIsOpen"><CaretTop /></el-icon>
+              <el-icon v-else><CaretBottom /></el-icon>
+              <span>地图影像</span>
+            </a>
+          </h3>
+          <el-radio-group class="layer-list layer-map-list" @change="layerChange" v-model="baseLayer" v-show="layerMapSelectListIsOpen">
+            <el-radio :key="index" v-for="(key, index) in layerKeys" :label="key" size="small">{{ key }}</el-radio>
+          </el-radio-group>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import {getCurrentInstance, onMounted, reactive, toRefs, ref} from 'vue'
+import {getCurrentInstance, onMounted, reactive, toRefs, ref, nextTick} from 'vue'
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import iconUrl from 'leaflet/dist/images/marker-icon.png'
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
+import SvgIcon from '@/components/SvgIcon/index.vue'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -64,6 +80,7 @@ const layerKeys = reactive([])
 const drawer = ref(false)
 const baseLayer = ref('')
 const previousLayer = ref('')
+const layerMapSelectListIsOpen = ref(false)
 
 function initMap() {
 
@@ -130,10 +147,10 @@ function getLocation() {
   })
 
   rMap.value.on('locationfound', e => {
-    if (rLocationMarker.value &&  rMap.value.hasLayer(rLocationMarker.value)) {
+    if (rLocationMarker.value && rMap.value.hasLayer(rLocationMarker.value)) {
       rMap.value.removeLayer(rLocationMarker.value)
     }
-    if (rLocationCircle.value &&  rMap.value.hasLayer(rLocationCircle.value)) {
+    if (rLocationCircle.value && rMap.value.hasLayer(rLocationCircle.value)) {
       rMap.value.removeLayer(rLocationCircle.value)
     }
     if (isLocation.value) {
@@ -141,13 +158,13 @@ function getLocation() {
       rMap.value.setView(latlng, 12)
       rLocationMarker.value = L.marker(latlng, {
         icon: L.divIcon({ className: 'location-marker'})
-      }).addTo( rMap.value)
+      }).addTo(rMap.value)
       rLocationCircle.value = L.circle(latlng, {
         color: 'transparent',
         fillColor: 'rgb(15, 128, 225)',
         fillOpacity: 0.2,
         radius: 6600
-      }).addTo( rMap.value)
+      }).addTo(rMap.value)
     }
   })
 }
@@ -182,6 +199,10 @@ function layerChange() {
       rMap.value.addLayer(baseLayers.value[key])
     }
   }
+}
+
+function layerMapSelectListOpen() {
+  layerMapSelectListIsOpen.value = !layerMapSelectListIsOpen.value
 }
 
 function getIconUrl(icon) {

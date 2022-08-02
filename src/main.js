@@ -7,7 +7,6 @@ import 'leaflet/dist/leaflet.css'
 import 'leaflet'
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css'
 import '@geoman-io/leaflet-geoman-free'
-import 'leaflet.chinesetmsproviders'
 
 import 'virtual:svg-icons-register'
 import SvgIcon from '@/components/SvgIcon/index.vue'
