@@ -1,24 +1,51 @@
 <template>
   <div class="map-container">
+    <div class="sidebar">
+      <div class="search_forms">
+        <el-input @input="searchKeyWords" @clear="sidebarTable = false" v-model="input" placeholder="" size="large" clearable>
+          <template #append>
+            <el-button :loading="loading" :icon="Search"/>
+          </template>
+        </el-input>
+        <ul class="search-key-words">
+          <li :key="index" v-for="(item, index) in suggestsList" @click="search(item.name)">
+            <el-icon>
+              <Search/>
+            </el-icon>
+            <span class="name">{{ item.name }}</span>
+            <span class="address">{{ item.address }}</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="sidebar-table" v-show="sidebarTable">
+      <el-table :data="tableData" style="width: 100%">
+        <el-table-column prop="date" label="Date" width="180" />
+        <el-table-column prop="name" label="Name" width="180" />
+        <el-table-column prop="address" label="Address" />
+      </el-table>
+      <el-pagination layout="prev, pager, next" :total="total" />
+    </div>
     <div id="map-main">
       <div class="map-controls-wrap">
         <div class="map-controls">
           <div class="map-control zoombuttons">
-            <button class="zoom-in" :class="zoomInDisabled ? 'disabled' : ''" @click="zoomIn" :disabled="zoomInDisabled">
-              <svg-icon :iconClass="'zoom-in'" />
+            <button class="zoom-in" :class="zoomInDisabled ? 'disabled' : ''" @click="zoomIn"
+                    :disabled="zoomInDisabled">
+              <svg-icon :iconClass="'zoom-in'"/>
             </button>
-            <button class="zoom-out" :class="zoomOutDisabled ? 'disabled' : ''" @click="zoomOut" :disabled="zoomOutDisabled">
-              <svg-icon :iconClass="'zoom-out'" />
+            <button class="zoom-out" :class="zoomOutDisabled ? 'disabled' : ''" @click="zoomOut"
+                    :disabled="zoomOutDisabled">
+              <svg-icon :iconClass="'zoom-out'"/>
             </button>
           </div>
           <div class="map-control layers">
             <button @click="layersDrawer">
-              <svg-icon :iconClass="'layers'" />
+              <svg-icon :iconClass="'layers'"/>
             </button>
           </div>
           <div class="map-control geolocate-control">
             <button :style="isLocation ? { background: 'rgba(47,84,235, 0.6)' } : {}" @click="getLocation">
-              <svg-icon :iconClass="'location'" />
+              <svg-icon :iconClass="'location'"/>
             </button>
           </div>
         </div>
@@ -27,18 +54,25 @@
     <div class="layer-select-drawer" v-show="drawer" :class="drawer ? 'open' : ''">
       <div class="layer-heading">
         <h2>地图图层</h2>
-        <el-icon @click="drawer=!drawer"><CloseBold /></el-icon>
+        <el-icon @click="drawer=!drawer">
+          <CloseBold/>
+        </el-icon>
       </div>
       <div class="layer-select">
         <div class="layer-map-select-list">
           <h3 @click="layerMapSelectListOpen">
             <a href="#" role="button" title="展开">
-              <el-icon v-if="layerMapSelectListIsOpen"><CaretTop /></el-icon>
-              <el-icon v-else><CaretBottom /></el-icon>
+              <el-icon v-if="layerMapSelectListIsOpen">
+                <CaretTop/>
+              </el-icon>
+              <el-icon v-else>
+                <CaretBottom/>
+              </el-icon>
               <span>地图影像</span>
             </a>
           </h3>
-          <el-radio-group class="layer-list layer-map-list" @change="layerChange" v-model="baseLayer" v-show="layerMapSelectListIsOpen">
+          <el-radio-group class="layer-list layer-map-list" @change="layerChange" v-model="baseLayer"
+                          v-show="layerMapSelectListIsOpen">
             <el-radio :key="index" v-for="(key, index) in layerKeys" :label="key" size="small">{{ key }}</el-radio>
           </el-radio-group>
         </div>
@@ -48,11 +82,15 @@
 </template>
 
 <script setup>
-import {getCurrentInstance, onMounted, reactive, toRefs, ref, nextTick} from 'vue'
+import {getCurrentInstance, onMounted, reactive, toRefs, ref} from 'vue'
+import {Search} from '@element-plus/icons-vue'
 import iconRetinaUrl from 'leaflet/dist/images/marker-icon-2x.png'
 import iconUrl from 'leaflet/dist/images/marker-icon.png'
 import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import SvgIcon from '@/components/SvgIcon/index.vue'
+import {mapSearch} from '@/api/mapSearch.js'
+import {ResultType} from '@/enums/resultType.js'
+import markerSvg from '@/assets/icons/svg/marker.svg'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -60,6 +98,29 @@ L.Icon.Default.mergeOptions({
   iconUrl: iconUrl,
   shadowUrl: shadowUrl,
 })
+
+const tableData = [
+  {
+    date: '2016-05-03',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-02',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-04',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+  {
+    date: '2016-05-01',
+    name: 'Tom',
+    address: 'No. 189, Grove St, Los Angeles',
+  },
+]
 
 const {proxy} = getCurrentInstance()
 const iconSelectRef = ref({})
@@ -81,23 +142,57 @@ const drawer = ref(false)
 const baseLayer = ref('')
 const previousLayer = ref('')
 const layerMapSelectListIsOpen = ref(false)
+const input = ref('')
+const str = reactive({})
+const postStr = toRefs(str)
+const mapKey = '21cb7300e83d3e5640326c7ccf25226e'
+const loading = ref(false)
+const suggestsList = ref([])
+const markers = ref([])
+const total = ref(1000)
+const sidebarTable = ref(false)
 
 function initMap() {
 
-  const layer = L.tileLayer('https://t{s}.tianditu.gov.cn/ibo_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ibo&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layer = L.tileLayer('https://t{s}.tianditu.gov.cn/ibo_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ibo&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
 
-  const layer1_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
-  const layer1_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layer1_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
+  const layer1_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cva_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cva&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
   const layerGroup1 = L.layerGroup([layer1_1, layer1_2, layer])
 
-  const layer2_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
-  const layer2_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cia_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cia&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
+  const layer2_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
+  const layer2_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cia_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cia&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
   const layerGroup2 = L.layerGroup([layer2_1, layer2_2, layer])
 
 
-  const layer3_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/ter_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ter&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
-  const layer3_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cta_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cta&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=21cb7300e83d3e5640326c7ccf25226e', {subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']})
-  const layerGroup3 = L.layerGroup([layer3_1, layer3_2, layer])
+  const layer3_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/ter_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ter&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
+  const layer3_2 = L.tileLayer('https://t{s}.tianditu.gov.cn/cta_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=cta&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
+  const layer3_3 = L.tileLayer('https://t0.tianditu.gov.cn/shuishen_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=shuishen&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
+    key: mapKey,
+    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
+  })
+  const layerGroup3 = L.layerGroup([layer3_1, layer3_2, layer3_3, layer])
 
   baseLayers.value = {
     '矢量': layerGroup1,
@@ -113,8 +208,8 @@ function initMap() {
   const map = L.map('map-main', {
     center: [30.621833394767293, 104.06472467339864],
     zoom: 10,
-    maxZoom: 16,
-    minZoom: 5,
+    maxZoom: 18,
+    minZoom: 4,
     zoomControl: false,
     attributionControl: false,
     layers: [layerGroup1],
@@ -154,10 +249,10 @@ function getLocation() {
       rMap.value.removeLayer(rLocationCircle.value)
     }
     if (isLocation.value) {
-      const { latlng } = e
+      const {latlng} = e
       rMap.value.setView(latlng, 12)
       rLocationMarker.value = L.marker(latlng, {
-        icon: L.divIcon({ className: 'location-marker'})
+        icon: L.divIcon({className: 'location-marker'})
       }).addTo(rMap.value)
       rLocationCircle.value = L.circle(latlng, {
         color: 'transparent',
@@ -207,6 +302,84 @@ function layerMapSelectListOpen() {
 
 function getIconUrl(icon) {
   return new URL(`../../assets/icons/svg/${icon}.svg`, import.meta.url).href
+}
+
+/** 关键词搜索 */
+const searchKeyWords = () => {
+  if (input.value) {
+    loading.value = true
+    const {_northEast, _southWest} = rMap.value.getBounds()
+    const bounds = [_northEast.lng, _northEast.lat, _southWest.lng, _southWest.lat]
+    const bound = bounds.join()
+    postStr.value = {
+      queryType: 4,
+      start: 0,
+      mapBound: bound,
+      yingjiType: 0,
+      level: rMap.value.getZoom(),
+      keyWord: input.value,
+      count: 10,
+      sourceType: 0
+    }
+    mapSearch(postStr.value, mapKey).then(res => {
+      const {suggestsKey, suggests} = res
+      suggestsList.value = suggests
+      loading.value = false
+    })
+  } else {
+    suggestsList.value = []
+  }
+}
+
+const search = (value) => {
+  if (!value) return
+  const {_northEast, _southWest} = rMap.value.getBounds()
+  const bounds = [_northEast.lng, _northEast.lat, _southWest.lng, _southWest.lat]
+  const bound = bounds.join()
+  postStr.value = {
+    queryType: 7,
+    start: 0,
+    mapBound: bound,
+    yingjiType: 0,
+    level: rMap.value.getZoom(),
+    keyWord: value,
+    count: 100,
+    sourceType: 0
+  }
+  mapSearch(postStr.value, mapKey).then(res => {
+    const {resultType} = res
+    console.log(resultType);
+    switch (resultType) {
+      case ResultType.pois:
+        const { pois } = res
+        const { length } = pois
+        for (let i = 0; i < length; i++) {
+          const { address, hotPointID, lonlat, name, phone } = pois[i]
+          let latLng = lonlat.split(',')
+          let center = [latLng[1], latLng[0]]
+          let myIcon = L.divIcon({
+            html: `<img src='${markerSvg}' alt="${address}">`
+          });
+          let marker = L.marker(center, { icon: myIcon }).addTo(rMap.value)
+          markers.value.push(marker)
+        }
+        console.log('普通');
+        break
+      case ResultType.statistics:
+        console.log('统计');
+        break
+      case ResultType.area:
+        console.log('行政区')
+        break
+      case ResultType.csws:
+        console.log('普通建议词搜索')
+        break
+      case ResultType.lineResult:
+        break
+    }
+  }).catch(e => {
+    console.log(e);
+  })
 }
 
 onMounted(() => {
