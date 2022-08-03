@@ -207,6 +207,8 @@
         height: 32px;
         transition: background .6s;
         cursor:pointer;
+        white-space: nowrap;
+        width: 100%;
 
         &:hover {
           background: #f5f5f5;

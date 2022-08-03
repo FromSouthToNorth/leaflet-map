@@ -9,7 +9,7 @@
         </el-input>
         <el-scrollbar>
           <ul class="search-key-words">
-            <li :key="index" v-for="(item, index) in suggestsList" @click="search(item.name)">
+            <li :key="index" v-for="(item, index) in suggestsList" @click="search(item.address + item.name)">
               <el-icon>
                 <Search/>
               </el-icon>
@@ -363,15 +363,15 @@ const search = (value) => {
         const { pois } = res
         for (let i = 0; i < pois.length; i++) {
           const { address, hotPointID, lonlat, name, phone } = pois[i]
-          createMarker(lonlat, name)
+          createMarker(lonlat, name + ' ' + address)
         }
         console.log('普通');
         break
       case ResultType.statistics:
-        const { allAdmins } = res.statistics
-        for (let i = 0; i < allAdmins.length; i++) {
-          console.log(allAdmins[i])
-          const {adminName, lonlat } = allAdmins[i]
+        const { priorityCitys } = res.statistics
+        for (let i = 0; i < priorityCitys.length; i++) {
+          console.log(priorityCitys[i])
+          const {adminName, lonlat } = priorityCitys[i]
           createMarker(lonlat, adminName)
         }
         console.log('统计');
@@ -391,6 +391,7 @@ const search = (value) => {
 }
 
 const createMarker = (lonlat, address) => {
+  console.log(address);
   let latLng = lonlat.split(',')
   let center = [latLng[1], latLng[0]]
   let marker = L.marker(center).addTo(rMap.value).bindPopup(`<b>${address}</b>`).openPopup()
