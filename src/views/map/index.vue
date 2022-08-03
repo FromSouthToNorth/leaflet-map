@@ -1,8 +1,13 @@
 <template>
   <div class="map-container">
     <div class="sidebar">
-      <div class="search_forms">
-        <el-input @input="searchKeyWords" @clear="sidebarTable = false" v-model="input" placeholder="" size="large" clearable>
+      <div tabindex="0" class="search_forms" @blur="suggestsList = []">
+        <el-input
+          @input="searchKeyWords"
+          @clear="sidebarTable = false"
+          v-model="input"
+          size="large"
+          clearable>
           <template #append>
             <el-button :loading="loading" :icon="Search"/>
           </template>
@@ -21,11 +26,11 @@
     </div>
     <div class="sidebar-table" v-show="sidebarTable">
       <el-table :data="tableData" style="width: 100%">
-        <el-table-column prop="date" label="Date" width="180" />
-        <el-table-column prop="name" label="Name" width="180" />
-        <el-table-column prop="address" label="Address" />
+        <el-table-column prop="date" label="Date" width="180"/>
+        <el-table-column prop="name" label="Name" width="180"/>
+        <el-table-column prop="address" label="Address"/>
       </el-table>
-      <el-pagination layout="prev, pager, next" :total="total" />
+      <el-pagination layout="prev, pager, next" :total="total"/>
     </div>
     <div id="map-main">
       <div class="map-controls-wrap">
@@ -124,7 +129,6 @@ const tableData = [
 ]
 
 const {proxy} = getCurrentInstance()
-const iconSelectRef = ref({})
 const map = reactive({})
 const rMap = toRefs(map)
 const lat = ref(0)
@@ -149,10 +153,10 @@ const postStr = toRefs(str)
 const mapKey = '21cb7300e83d3e5640326c7ccf25226e'
 const loading = ref(false)
 const suggestsList = ref([])
-const reactiveMarkers = reactive([])
 const markers = toRefs([])
 const total = ref(1000)
 const sidebarTable = ref(false)
+const selectAddress = ref('')
 
 function initMap() {
 
@@ -208,10 +212,10 @@ function initMap() {
   }
 
   const map = L.map('map-main', {
-    center: [30.621833394767293, 104.06472467339864],
-    zoom: 10,
+    center: [34.3227, 108.5525],
+    zoom: 4,
     maxZoom: 18,
-    minZoom: 4,
+    minZoom: 3,
     zoomControl: false,
     attributionControl: false,
     layers: [layerGroup1],
@@ -224,17 +228,11 @@ function initMap() {
 
   map.addControl(L.control.scale({imperial: false}))
 
-  map.on('locationerror', e => {
-    console.log("locationerror --> ", e);
-  })
-
   map.on('zoom', e => {
     eventMapZoom()
   })
 
   rMap.value = map
-
-  getLocation()
 }
 
 function getLocation() {
@@ -252,7 +250,7 @@ function getLocation() {
     }
     if (isLocation.value) {
       const {latlng} = e
-      rMap.value.setView(latlng, 12)
+      rMap.value.setView(latlng, 14)
       rLocationMarker.value = L.marker(latlng, {
         icon: L.divIcon({className: 'location-marker'})
       }).addTo(rMap.value)
@@ -260,7 +258,7 @@ function getLocation() {
         color: 'transparent',
         fillColor: 'rgb(15, 128, 225)',
         fillOpacity: 0.2,
-        radius: 6600
+        radius: 600
       }).addTo(rMap.value)
     }
   })
@@ -334,6 +332,7 @@ const searchKeyWords = () => {
 }
 
 const search = (value) => {
+  console.log(value);
   if (markers.value) {
     markers.value.forEach(e => {
       if (rMap.value.hasLayer(e)) {
@@ -360,18 +359,18 @@ const search = (value) => {
     const {resultType} = res
     switch (resultType) {
       case ResultType.pois:
-        const { pois } = res
+        const {pois} = res
         for (let i = 0; i < pois.length; i++) {
-          const { address, hotPointID, lonlat, name, phone } = pois[i]
+          const {address, hotPointID, lonlat, name, phone} = pois[i]
           createMarker(lonlat, name + ' ' + address)
         }
         console.log('普通');
         break
       case ResultType.statistics:
-        const { priorityCitys } = res.statistics
+        const {priorityCitys} = res.statistics
         for (let i = 0; i < priorityCitys.length; i++) {
           console.log(priorityCitys[i])
-          const {adminName, lonlat } = priorityCitys[i]
+          const {adminName, lonlat} = priorityCitys[i]
           createMarker(lonlat, adminName)
         }
         console.log('统计');

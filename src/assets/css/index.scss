@@ -235,6 +235,10 @@
     padding-top: 80px;
   }
 
+  .input-with-select .el-input-group__prepend {
+    background-color: var(--el-fill-color-blank);
+  }
+
 }
 
 
