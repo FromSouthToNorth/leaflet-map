@@ -7,14 +7,16 @@
             <el-button :loading="loading" :icon="Search"/>
           </template>
         </el-input>
-        <ul class="search-key-words">
-          <li :key="index" v-for="(item, index) in suggestsList" @click="search(item.name)">
-            <el-icon>
-              <Search/>
-            </el-icon>
-            <span class="name">{{ item.name }}</span>
-            <span class="address">{{ item.address }}</span></li>
-        </ul>
+        <el-scrollbar>
+          <ul class="search-key-words">
+            <li :key="index" v-for="(item, index) in suggestsList" @click="search(item.name)">
+              <el-icon>
+                <Search/>
+              </el-icon>
+              <span class="name">{{ item.name }}</span>
+              <span class="address">{{ item.address }}</span></li>
+          </ul>
+        </el-scrollbar>
       </div>
     </div>
     <div class="sidebar-table" v-show="sidebarTable">
@@ -90,7 +92,6 @@ import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import SvgIcon from '@/components/SvgIcon/index.vue'
 import {mapSearch} from '@/api/mapSearch.js'
 import {ResultType} from '@/enums/resultType.js'
-import markerSvg from '@/assets/icons/svg/marker.svg'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -148,7 +149,8 @@ const postStr = toRefs(str)
 const mapKey = '21cb7300e83d3e5640326c7ccf25226e'
 const loading = ref(false)
 const suggestsList = ref([])
-const markers = ref([])
+const reactiveMarkers = reactive([])
+const markers = toRefs([])
 const total = ref(1000)
 const sidebarTable = ref(false)
 
@@ -332,6 +334,14 @@ const searchKeyWords = () => {
 }
 
 const search = (value) => {
+  if (markers.value) {
+    markers.value.forEach(e => {
+      if (rMap.value.hasLayer(e)) {
+        rMap.value.removeLayer(e)
+      }
+    })
+  }
+  markers.value = []
   if (!value) return
   const {_northEast, _southWest} = rMap.value.getBounds()
   const bounds = [_northEast.lng, _northEast.lat, _southWest.lng, _southWest.lat]
@@ -348,24 +358,22 @@ const search = (value) => {
   }
   mapSearch(postStr.value, mapKey).then(res => {
     const {resultType} = res
-    console.log(resultType);
     switch (resultType) {
       case ResultType.pois:
         const { pois } = res
-        const { length } = pois
-        for (let i = 0; i < length; i++) {
+        for (let i = 0; i < pois.length; i++) {
           const { address, hotPointID, lonlat, name, phone } = pois[i]
-          let latLng = lonlat.split(',')
-          let center = [latLng[1], latLng[0]]
-          let myIcon = L.divIcon({
-            html: `<img src='${markerSvg}' alt="${address}">`
-          });
-          let marker = L.marker(center, { icon: myIcon }).addTo(rMap.value)
-          markers.value.push(marker)
+          createMarker(lonlat, name)
         }
         console.log('普通');
         break
       case ResultType.statistics:
+        const { allAdmins } = res.statistics
+        for (let i = 0; i < allAdmins.length; i++) {
+          console.log(allAdmins[i])
+          const {adminName, lonlat } = allAdmins[i]
+          createMarker(lonlat, adminName)
+        }
         console.log('统计');
         break
       case ResultType.area:
@@ -380,6 +388,13 @@ const search = (value) => {
   }).catch(e => {
     console.log(e);
   })
+}
+
+const createMarker = (lonlat, address) => {
+  let latLng = lonlat.split(',')
+  let center = [latLng[1], latLng[0]]
+  let marker = L.marker(center).addTo(rMap.value).bindPopup(`<b>${address}</b>`).openPopup()
+  markers.value.push(marker)
 }
 
 onMounted(() => {
