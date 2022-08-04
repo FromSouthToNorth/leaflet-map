@@ -4,7 +4,7 @@
       <div tabindex="0" class="search_forms" @blur="suggestsList = []">
         <el-input
           @input="searchKeyWords"
-          @clear="sidebarTable = false"
+          @clear="clear"
           v-model="input"
           size="large"
           clearable>
@@ -97,6 +97,7 @@ import shadowUrl from 'leaflet/dist/images/marker-shadow.png'
 import SvgIcon from '@/components/SvgIcon/index.vue'
 import {mapSearch} from '@/api/mapSearch.js'
 import {ResultType} from '@/enums/resultType.js'
+import markerBlueUrl from '@/assets/img/marker-blue.png'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -156,14 +157,18 @@ const suggestsList = ref([])
 const markers = toRefs([])
 const total = ref(1000)
 const sidebarTable = ref(false)
-const selectAddress = ref('')
+
+const myIcon = L.Icon.extend({
+  options: {
+    iconSize:     [24, 26],
+    iconAnchor:   [11, 24],
+    popupAnchor:  [0, -20]
+  }
+})
+
+const blueIcon = new myIcon({iconUrl: markerBlueUrl})
 
 function initMap() {
-
-  const layer = L.tileLayer('https://t{s}.tianditu.gov.cn/ibo_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ibo&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
-    key: mapKey,
-    subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
-  })
 
   const layer1_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/vec_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=vec&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
     key: mapKey,
@@ -173,7 +178,7 @@ function initMap() {
     key: mapKey,
     subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
   })
-  const layerGroup1 = L.layerGroup([layer1_1, layer1_2, layer])
+  const layerGroup1 = L.layerGroup([layer1_1, layer1_2])
 
   const layer2_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/img_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=img&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
     key: mapKey,
@@ -183,7 +188,7 @@ function initMap() {
     key: mapKey,
     subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
   })
-  const layerGroup2 = L.layerGroup([layer2_1, layer2_2, layer])
+  const layerGroup2 = L.layerGroup([layer2_1, layer2_2])
 
 
   const layer3_1 = L.tileLayer('https://t{s}.tianditu.gov.cn/ter_w/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ter&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk={key}', {
@@ -198,7 +203,7 @@ function initMap() {
     key: mapKey,
     subdomains: ['0', '1', '2', '3', '4', '5', '6', '7']
   })
-  const layerGroup3 = L.layerGroup([layer3_1, layer3_2, layer3_3, layer])
+  const layerGroup3 = L.layerGroup([layer3_1, layer3_2, layer3_3])
 
   baseLayers.value = {
     '矢量': layerGroup1,
@@ -213,7 +218,7 @@ function initMap() {
 
   const map = L.map('map-main', {
     center: [34.3227, 108.5525],
-    zoom: 4,
+    zoom: 5,
     maxZoom: 18,
     minZoom: 3,
     zoomControl: false,
@@ -332,7 +337,7 @@ const searchKeyWords = () => {
 }
 
 const search = (value) => {
-  console.log(value);
+  loading.value = true
   if (markers.value) {
     markers.value.forEach(e => {
       if (rMap.value.hasLayer(e)) {
@@ -356,21 +361,29 @@ const search = (value) => {
     sourceType: 0
   }
   mapSearch(postStr.value, mapKey).then(res => {
+    loading.value = false
     const {resultType} = res
     switch (resultType) {
       case ResultType.pois:
         const {pois} = res
         for (let i = 0; i < pois.length; i++) {
+          console.log(pois[i]);
           const {address, hotPointID, lonlat, name, phone} = pois[i]
-          createMarker(lonlat, name + ' ' + address)
+          createMarker(lonlat, name, address)
         }
         console.log('普通');
         break
       case ResultType.statistics:
-        const {priorityCitys} = res.statistics
+        console.log(res.statistics);
+        const {priorityCitys, allAdmins} = res.statistics
         for (let i = 0; i < priorityCitys.length; i++) {
           console.log(priorityCitys[i])
           const {adminName, lonlat} = priorityCitys[i]
+          createMarker(lonlat, adminName)
+        }
+        for (let i = 0; i < allAdmins.length; i++) {
+          console.log(allAdmins[i])
+          const {adminName, lonlat} = allAdmins[i]
           createMarker(lonlat, adminName)
         }
         console.log('统计');
@@ -389,12 +402,26 @@ const search = (value) => {
   })
 }
 
-const createMarker = (lonlat, address) => {
-  console.log(address);
+const createMarker = (lonlat, name, address) => {
   let latLng = lonlat.split(',')
   let center = [latLng[1], latLng[0]]
-  let marker = L.marker(center).addTo(rMap.value).bindPopup(`<b>${address}</b>`).openPopup()
+  let popupContent = `<h2>${name}</h2>`
+  if (address) {
+    popupContent += `<p><span>地址: </span>${address}</p>`
+  }
+  let marker = L.marker(center, { icon: blueIcon }).addTo(rMap.value).bindPopup(popupContent)
   markers.value.push(marker)
+}
+
+const clear = () => {
+  loading.value = false
+  if (markers.value) {
+    markers.value.forEach(e => {
+      if (rMap.value.hasLayer(e)) {
+        rMap.value.removeLayer(e)
+      }
+    })
+  }
 }
 
 onMounted(() => {
