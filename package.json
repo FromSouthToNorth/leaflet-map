@@ -17,7 +17,6 @@
     "js-cookie": "^3.0.1",
     "jsencrypt": "^3.2.1",
     "leaflet": "^1.8.0",
-    "leaflet.sync": "^0.2.4",
     "pinia": "^2.0.16",
     "vue": "^3.2.37",
     "vue-router": "^4.1.2"

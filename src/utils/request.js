@@ -86,7 +86,7 @@ service.interceptors.response.use(res => {
       return Promise.reject('error')
     }
     else {
-      return  Promise.resolve(res.data)
+      return Promise.resolve(res.data)
     }
   },
   error => {
